@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Threat Detection & Response Pipeline</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            color: #00ff00;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 2400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #00ff00;
+            padding-bottom: 15px;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            color: #00ff00;
+            text-shadow: 0 0 15px rgba(0, 255, 0, 0.6);
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 10px;
+            color: #00aa00;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .controls {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background: #00ff00;
+            color: #000;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 5px;
+            transition: all 0.3s ease;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        button:hover {
+            background: #00aa00;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.6);
+        }
+
+        .status-line {
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 10px;
+            color: #00ff00;
+        }
+
+        .pipeline-container {
+            background: rgba(0, 0, 0, 0.85);
+            border: 1px solid #00ff00;
+            border-radius: 4px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .pipeline-title {
+            color: #00ff00;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            font-size: 11px;
+            border-bottom: 1px solid #00ff00;
+            padding-bottom: 8px;
+        }
+
+        .node-container {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .node {
+            background: rgba(0, 100, 100, 0.2);
+            border: 1px solid #00ffff;
+            border-radius: 4px;
+            padding: 12px;
+            font-size: 9px;
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .node-title {
+            color: #00ffff;
+            font-weight: bold;
+            margin-bottom: 8px;
+            font-size: 9px;
+        }
+
+        .node-content {
+            color: #00ff00;
+            font-size: 8px;
+            flex-grow: 1;
+        }
+
+        .node.processing {
+            background: rgba(100, 200, 255, 0.2);
+            border-color: #64c8ff;
+            animation: pulse 0.8s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .node.success {
+            background: rgba(0, 255, 0, 0.1);
+            border-color: #00ff00;
+        }
+
+        .node.warning {
+            background: rgba(255, 170, 0, 0.1);
+            border-color: #ffaa00;
+        }
+
+        .node.error {
+            background: rgba(255, 0, 0, 0.1);
+            border-color: #ff0000;
+        }
+
+        .arrow {
+            text-align: center;
+            color: #00ffff;
+            font-weight: bold;
+            font-size: 20px;
+            margin: 10px 0;
+        }
+
+        .grid-2col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .panel {
+            background: rgba(0, 0, 0, 0.85);
+            border: 1px solid #00ff00;
+            border-radius: 4px;
+            padding: 15px;
+            font-size: 9px;
+        }
+
+        .panel-title {
+            color: #00ff00;
+            font-weight: bold;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #00ff00;
+            text-transform: uppercase;
+            font-size: 10px;
+        }
+
+        .scrollable {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .log-entry {
+            background: rgba(0, 150, 150, 0.1);
+            border-left: 2px solid #00ffff;
+            padding: 6px;
+            margin-bottom: 6px;
+            font-size: 8px;
+            opacity: 0;
+            animation: slideIn 0.4s ease forwards;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .timestamp {
+            color: #00aa00;
+            font-size: 7px;
+        }
+
+        .action {
+            color: #00ff00;
+            font-weight: bold;
+            font-size: 8px;
+        }
+
+        .severity-critical {
+            color: #ff0000;
+        }
+
+        .severity-high {
+            color: #ffaa00;
+        }
+
+        .severity-medium {
+            color: #ffff00;
+        }
+
+        .severity-low {
+            color: #00ff00;
+        }
+
+        .decision-box {
+            background: rgba(0, 200, 0, 0.05);
+            border: 1px solid #00ff00;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 10px;
+            font-size: 8px;
+        }
+
+        .decision-title {
+            color: #00ffff;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .decision-content {
+            color: #00ff00;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #00ff00;
+            border-radius: 3px;
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .metric-box {
+            background: rgba(0, 150, 150, 0.1);
+            border: 1px solid #00ffff;
+            border-radius: 4px;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .metric-value {
+            color: #00ff00;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .metric-label {
+            color: #00aa00;
+            font-size: 7px;
+            text-transform: uppercase;
+            margin-top: 4px;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📧 EMAIL THREAT DETECTION & RESPONSE PIPELINE</h1>
+            <p>5-Node Security Orchestration • Real-Time Classification • Escalation & Compliance Routing</p>
+            <div style="margin-top: 10px; font-size: 9px; color: #00aa00;">Built by Ramon Cortez • AI Architect</div>
+        </div>
+
+        <div class="controls">
+            <button onclick="ingestEmail('authentic')">✉️ AUTHENTIC EMAIL</button>
+            <button onclick="ingestEmail('phishing')">⚠️ PHISHING ATTACK</button>
+            <button onclick="ingestEmail('spoofed')">🚨 SPOOFED DOMAIN</button>
+            <button onclick="ingestEmail('compliance')">📋 COMPLIANCE ALERT</button>
+            <button onclick="clearAll()">🗑️ RESET</button>
+        </div>
+
+        <div class="status-line" id="status-line"></div>
+
+        <div class="metrics">
+            <div class="metric-box">
+                <div class="metric-value" id="metric-total">0</div>
+                <div class="metric-label">Emails Processed</div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-value" id="metric-critical">0</div>
+                <div class="metric-label">Critical</div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-value" id="metric-high">0</div>
+                <div class="metric-label">High</div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-value" id="metric-medium">0</div>
+                <div class="metric-label">Medium</div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-value" id="metric-low">0</div>
+                <div class="metric-label">Low</div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-value" id="metric-escalated">0</div>
+                <div class="metric-label">Escalated</div>
+            </div>
+        </div>
+
+        <!-- Pipeline Visualization -->
+        <div class="pipeline-container">
+            <div class="pipeline-title">🔄 Email Security Pipeline</div>
+            <div class="node-container" id="pipeline-nodes"></div>
+        </div>
+
+        <!-- Classification & Decisions -->
+        <div class="grid-2col">
+            <!-- Node 1: Header Verification -->
+            <div class="panel">
+                <div class="panel-title">🔍 Node 1: Header Verification</div>
+                <div class="scrollable" id="node1-log"></div>
+            </div>
+
+            <!-- Node 2: Intent Classification -->
+            <div class="panel">
+                <div class="panel-title">🧠 Node 2: Intent Engine</div>
+                <div class="scrollable" id="node2-log"></div>
+            </div>
+        </div>
+
+        <div class="grid-2col">
+            <!-- Node 3: Rules & Playbooks -->
+            <div class="panel">
+                <div class="panel-title">⚙️ Node 3: Grounded Rules</div>
+                <div class="scrollable" id="node3-log"></div>
+            </div>
+
+            <!-- Node 4: Archive & Audit -->
+            <div class="panel">
+                <div class="panel-title">📦 Node 4: Auto-Archive</div>
+                <div class="scrollable" id="node4-log"></div>
+            </div>
+        </div>
+
+        <!-- Node 5: Escalation & Actions -->
+        <div class="panel full-width">
+            <div class="panel-title">⚡ Node 5: Escalation & Action Extraction</div>
+            <div class="scrollable" id="node5-log"></div>
+        </div>
+
+        <!-- Audit Trail -->
+        <div class="panel full-width" style="margin-top: 20px;">
+            <div class="panel-title">📋 Immutable Audit Trail</div>
+            <div class="scrollable" id="audit-log"></div>
+        </div>
+    </div>
+
+    <script>
+        const state = {
+            emails: [],
+            metrics: {
+                total: 0,
+                critical: 0,
+                high: 0,
+                medium: 0,
+                low: 0,
+                escalated: 0
+            }
+        };
+
+        function formatTime() {
+            const now = new Date();
+            return now.toLocaleTimeString('en-US', { hour12: false }) + '.' + 
+                   now.getMilliseconds().toString().padStart(3, '0');
+        }
+
+        function generateEmailId() {
+            return 'EMAIL-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6).toUpperCase();
+        }
+
+        function addLog(panelId, timestamp, label, message, severity = 'info') {
+            const container = document.getElementById(panelId);
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.innerHTML = `
+                <span class="timestamp">[${timestamp}]</span>
+                <span class="action">${label}</span>
+                <span class="severity-${severity}">${message}</span>
+            `;
+            entry.style.animationDelay = Math.random() * 0.2 + 's';
+            container.appendChild(entry);
+            container.scrollTop = container.scrollHeight;
+            
+            if (container.children.length > 25) {
+                container.removeChild(container.firstChild);
+            }
+        }
+
+        function addAuditEntry(timestamp, emailId, stage, result, details) {
+            const container = document.getElementById('audit-log');
+            const entry = document.createElement('div');
+            entry.className = 'decision-box';
+            entry.innerHTML = `
+                <div class="decision-title">${timestamp} | ${emailId}</div>
+                <div class="decision-content">
+                    Stage: ${stage} | Result: ${result} | ${details}
+                </div>
+            `;
+            container.appendChild(entry);
+            container.scrollTop = container.scrollHeight;
+            
+            if (container.children.length > 30) {
+                container.removeChild(container.firstChild);
+            }
+        }
+
+        function updateMetrics() {
+            document.getElementById('metric-total').textContent = state.metrics.total;
+            document.getElementById('metric-critical').textContent = state.metrics.critical;
+            document.getElementById('metric-high').textContent = state.metrics.high;
+            document.getElementById('metric-medium').textContent = state.metrics.medium;
+            document.getElementById('metric-low').textContent = state.metrics.low;
+            document.getElementById('metric-escalated').textContent = state.metrics.escalated;
+        }
+
+        function renderPipeline() {
+            const container = document.getElementById('pipeline-nodes');
+            const nodes = [
+                { title: 'Node 1', subtitle: 'Header\nVerification', color: '#00ffff' },
+                { title: 'Node 2', subtitle: 'Intent\nEngine', color: '#00ffff' },
+                { title: 'Node 3', subtitle: 'Grounded\nRules', color: '#00ffff' },
+                { title: 'Node 4', subtitle: 'Auto-\nArchive', color: '#00ffff' },
+                { title: 'Node 5', subtitle: 'Escalation\n& Action', color: '#00ffff' }
+            ];
+
+            nodes.forEach((node, idx) => {
+                const div = document.createElement('div');
+                div.id = `node-${idx}`;
+                div.className = 'node';
+                div.style.borderColor = node.color;
+                div.innerHTML = `
+                    <div class="node-title">${node.title}</div>
+                    <div class="node-content">${node.subtitle}</div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        async function ingestEmail(type) {
+            const emailId = generateEmailId();
+            const timestamp = formatTime();
+            
+            state.metrics.total++;
+
+            let emailData = {
+                id: emailId,
+                type: type,
+                timestamp: timestamp,
+                sender: '',
+                domain: '',
+                dkim: false,
+                spf: false,
+                confidence: 0,
+                severity: 'low'
+            };
+
+            // Configure email based on type
+            if (type === 'authentic') {
+                emailData.sender = 'support@microsoft.com';
+                emailData.domain = 'microsoft.com';
+                emailData.dkim = true;
+                emailData.spf = true;
+                emailData.confidence = 0.98;
+                emailData.severity = 'low';
+            } else if (type === 'phishing') {
+                emailData.sender = 'admin@paypal.com';
+                emailData.domain = 'paypal.com';
+                emailData.dkim = true;
+                emailData.spf = true;
+                emailData.confidence = 0.94;
+                emailData.severity = 'critical';
+            } else if (type === 'spoofed') {
+                emailData.sender = 'noreply@amazon.com';
+                emailData.domain = 'amaz0n.com';
+                emailData.dkim = false;
+                emailData.spf = false;
+                emailData.confidence = 0.42;
+                emailData.severity = 'high';
+            } else if (type === 'compliance') {
+                emailData.sender = 'audit@compliance.gov';
+                emailData.domain = 'compliance.gov';
+                emailData.dkim = true;
+                emailData.spf = true;
+                emailData.confidence = 0.87;
+                emailData.severity = 'medium';
+            }
+
+            state.emails.push(emailData);
+            document.getElementById('status-line').textContent = `Processing: ${emailId} (${type})`;
+
+            // Node 1: Header Verification
+            updateNodeUI(0, 'processing');
+            await new Promise(r => setTimeout(r, 300));
+            
+            const timestamp1 = formatTime();
+            addLog('node1-log', timestamp1, 'EXTRACT', `From: ${emailData.sender} | Domain: ${emailData.domain}`);
+            addAuditEntry(timestamp1, emailId, 'Node 1: Header', 'EXTRACTED', `Domain: ${emailData.domain}`);
+            
+            await new Promise(r => setTimeout(r, 400));
+            const timestamp2 = formatTime();
+            
+            if (!emailData.dkim || !emailData.spf) {
+                addLog('node1-log', timestamp2, 'VERIFY', 'DKIM/SPF FAILED - Spoofed/Unverified', 'error');
+                addAuditEntry(timestamp2, emailId, 'Node 1: Verification', 'FAILED', 'DKIM/SPF check failed');
+                
+                // Immediate Quarantine
+                updateNodeUI(0, 'error');
+                await new Promise(r => setTimeout(r, 300));
+                
+                const timestamp3 = formatTime();
+                addLog('node1-log', timestamp3, 'ACTION', 'IMMEDIATE QUARANTINE - Threat blocked', 'critical');
+                addAuditEntry(timestamp3, emailId, 'Node 1: Quarantine', 'EXECUTED', 'Email quarantined');
+                
+                state.metrics.high++;
+                state.metrics.escalated++;
+                updateMetrics();
+                
+                document.getElementById('status-line').textContent = `⛔ ${emailId} QUARANTINED - Spoofed domain detected`;
+                return;
+            }
+
+            addLog('node1-log', timestamp2, 'VERIFY', `DKIM ✓ | SPF ✓ - Domain Authentic`, 'success');
+            addAuditEntry(timestamp2, emailId, 'Node 1: Verification', 'PASSED', 'DKIM/SPF authenticated');
+            
+            updateNodeUI(0, 'success');
+
+            // Node 2: Intent Engine
+            await new Promise(r => setTimeout(r, 500));
+            updateNodeUI(1, 'processing');
+            
+            const timestamp4 = formatTime();
+            addLog('node2-log', timestamp4, 'CONFIDENCE', `Score: ${(emailData.confidence * 100).toFixed(0)}% | Threshold: 90%`);
+            
+            await new Promise(r => setTimeout(r, 400));
+            const timestamp5 = formatTime();
+
+            if (emailData.confidence < 0.90) {
+                addLog('node2-log', timestamp5, 'CLASSIFY', `BELOW THRESHOLD - Unclassified`, 'low');
+                updateNodeUI(1, 'warning');
+            } else {
+                let severityText = '';
+                if (emailData.severity === 'critical') {
+                    addLog('node2-log', timestamp5, 'CLASSIFY', `CRITICAL THREAT DETECTED - High confidence`, 'critical');
+                    state.metrics.critical++;
+                    severityText = 'CRITICAL';
+                } else if (emailData.severity === 'high') {
+                    addLog('node2-log', timestamp5, 'CLASSIFY', `HIGH RISK - Investigation needed`, 'high');
+                    state.metrics.high++;
+                    severityText = 'HIGH';
+                } else if (emailData.severity === 'medium') {
+                    addLog('node2-log', timestamp5, 'CLASSIFY', `MEDIUM RISK - Compliance review`, 'medium');
+                    state.metrics.medium++;
+                    severityText = 'MEDIUM';
+                } else {
+                    addLog('node2-log', timestamp5, 'CLASSIFY', `LOW RISK - System noise`, 'low');
+                    state.metrics.low++;
+                    severityText = 'LOW';
+                }
+                addAuditEntry(timestamp5, emailId, 'Node 2: Classification', severityText, `Confidence: ${(emailData.confidence * 100).toFixed(0)}%`);
+                updateNodeUI(1, 'success');
+            }
+
+            // Node 3: Grounded Rules
+            await new Promise(r => setTimeout(r, 500));
+            updateNodeUI(2, 'processing');
+            
+            const timestamp6 = formatTime();
+            
+            if (emailData.severity === 'critical' || emailData.severity === 'high') {
+                addLog('node3-log', timestamp6, 'RULES', 'SOC Incident SOP Triggered', 'critical');
+                addLog('node3-log', formatTime(), 'PLAYBOOK', 'Rule 1: Isolate account | Rule 2: Forensic scan', 'high');
+                addAuditEntry(timestamp6, emailId, 'Node 3: Rules', 'SOC_SOP', 'Incident response playbook loaded');
+                state.metrics.escalated++;
+            } else if (emailData.severity === 'medium') {
+                addLog('node3-log', timestamp6, 'RULES', 'Regulatory Playbook Triggered', 'medium');
+                addLog('node3-log', formatTime(), 'PLAYBOOK', 'Rule 1: Compliance log | Rule 2: Audit trail', 'medium');
+                addAuditEntry(timestamp6, emailId, 'Node 3: Rules', 'COMPLIANCE', 'Regulatory playbook loaded');
+            } else {
+                addLog('node3-log', timestamp6, 'RULES', 'Auto-Archive Path - Low Priority', 'low');
+                addAuditEntry(timestamp6, emailId, 'Node 3: Rules', 'ARCHIVE', 'Low-risk routing');
+            }
+            
+            await new Promise(r => setTimeout(r, 400));
+            updateNodeUI(2, 'success');
+
+            // Node 4: Auto-Archive
+            await new Promise(r => setTimeout(r, 500));
+            updateNodeUI(3, 'processing');
+            
+            const timestamp7 = formatTime();
+            addLog('node4-log', timestamp7, 'ARCHIVE', `Email ID: ${emailId} | Immutable storage`, 'success');
+            
+            await new Promise(r => setTimeout(r, 300));
+            const timestamp8 = formatTime();
+            
+            const checksum = Math.random().toString(16).slice(2, 18).toUpperCase();
+            addLog('node4-log', timestamp8, 'AUDIT', `Checksum: 0x${checksum} | Hash verified`, 'success');
+            addAuditEntry(timestamp8, emailId, 'Node 4: Archive', 'STORED', `Checksum: 0x${checksum}`);
+            
+            updateNodeUI(3, 'success');
+
+            // Node 5: Escalation & Actions
+            await new Promise(r => setTimeout(r, 500));
+            updateNodeUI(4, 'processing');
+            
+            const timestamp9 = formatTime();
+
+            if (emailData.severity === 'critical') {
+                addLog('node5-log', timestamp9, 'ESCALATE', '🚨 SECURITY TEAM PAGER ACTIVATED', 'critical');
+                addLog('node5-log', formatTime(), 'ACTION', 'Incident ID: INC-' + Math.random().toString(36).slice(2, 8).toUpperCase(), 'critical');
+                addLog('node5-log', formatTime(), 'OVERRIDE', 'Human-in-loop: Awaiting SOC response', 'critical');
+                addAuditEntry(timestamp9, emailId, 'Node 5: Escalation', 'PAGER_SENT', 'Security team notified');
+            } else if (emailData.severity === 'high') {
+                addLog('node5-log', timestamp9, 'ESCALATE', '⚠️ HIGH PRIORITY TICKET CREATED', 'high');
+                addLog('node5-log', formatTime(), 'ACTION', 'Ticket: TKT-' + Math.random().toString(36).slice(2, 8).toUpperCase() + ' | Assigned to SOC', 'high');
+                addAuditEntry(timestamp9, emailId, 'Node 5: Escalation', 'TICKET_CREATED', 'SOC ticket created');
+            } else if (emailData.severity === 'medium') {
+                addLog('node5-log', timestamp9, 'EXTRACT', 'Compliance Action Extracted', 'medium');
+                addLog('node5-log', formatTime(), 'ACTION', 'Compliance Ticket: COMP-' + Math.random().toString(36).slice(2, 8).toUpperCase(), 'medium');
+                addLog('node5-log', formatTime(), 'SOP', 'Pre-populated SOP: Regulatory Review', 'medium');
+                addAuditEntry(timestamp9, emailId, 'Node 5: Compliance', 'TICKET_CREATED', 'Compliance team notified');
+            } else {
+                addLog('node5-log', timestamp9, 'ACTION', 'Pipeline Complete - No escalation needed', 'low');
+                addAuditEntry(timestamp9, emailId, 'Node 5: Termination', 'COMPLETE', 'Pipeline terminated');
+            }
+
+            await new Promise(r => setTimeout(r, 400));
+            updateNodeUI(4, 'success');
+
+            updateMetrics();
+            document.getElementById('status-line').textContent = `✓ ${emailId} processed (${emailData.severity.toUpperCase()})`;
+        }
+
+        function updateNodeUI(nodeIndex, status) {
+            const node = document.getElementById(`node-${nodeIndex}`);
+            if (!node) return;
+
+            node.classList.remove('processing', 'success', 'warning', 'error');
+            if (status) node.classList.add(status);
+        }
+
+        function clearAll() {
+            document.getElementById('node1-log').innerHTML = '';
+            document.getElementById('node2-log').innerHTML = '';
+            document.getElementById('node3-log').innerHTML = '';
+            document.getElementById('node4-log').innerHTML = '';
+            document.getElementById('node5-log').innerHTML = '';
+            document.getElementById('audit-log').innerHTML = '';
+
+            state.metrics = {
+                total: 0,
+                critical: 0,
+                high: 0,
+                medium: 0,
+                low: 0,
+                escalated: 0
+            };
+
+            updateMetrics();
+            
+            const nodes = document.querySelectorAll('.node');
+            nodes.forEach(node => {
+                node.classList.remove('processing', 'success', 'warning', 'error');
+            });
+
+            document.getElementById('status-line').textContent = 'System reset. Ready for email ingestion.';
+        }
+
+        // Initialize
+        window.addEventListener('load', () => {
+            renderPipeline();
+            updateMetrics();
+            setTimeout(() => ingestEmail('authentic'), 500);
+        });
+    </script>
+</body>
+</html>
