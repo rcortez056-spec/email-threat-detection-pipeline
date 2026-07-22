@@ -7,12 +7,12 @@ Built by **Ramon Cortez** | AI Systems Architect
 ---
 
 ## Architecture Overview
-
+```
 +-----------------------------------------------------------------------------------+
 |                     EMAIL THREAT DETECTION & RESPONSE PIPELINE                   |
 +-----------------------------------------------------------------------------------+
 [ Node 1 ]       -> [ Node 2 ]       -> [ Node 3 ]       -> [ Node 4 ] -> [ Node 5 ]
----
+```
 
 ## 5-Node Execution Logic
 
