@@ -39,4 +39,4 @@ Built by **Ramon Cortez** | AI Systems Architect
 1. **Deterministic Front Door:** Never trust probabilistic outputs for standard security protocol checks (DKIM/SPF).
 2. **Fail-Safe Routing:** Unverified domains are quarantined instantly at zero token cost.
 3. **Auditability:** Complete logging across header checks, intent scores, and escalation triggers.Header Verification | Intent Engine     | Grounded Rules    | Auto-Archive | Escalation. Most email security workflows make the mistake of feeding raw incoming payloads directly into probabilistic models. This architecture places deterministic control wrappers upfront to eliminate spoofing risks before an LLM processes the message content.
- Live Demo & Architecture Portal: [Insert your live link here](https://ramon-email-threat.netlify.app)
+ [Live Demo & Architecture Portal](https://ramon-email-threat.netlify.app)
