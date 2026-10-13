@@ -9,11 +9,14 @@
   "ui": {
     "bundle": {
       "format": "static-spa",
-      "entry": "index.html"
-    "views": [
-  {
-    "name": "main",
-    "title": "Email Threat Detection",
-    "is_default": true
+      "entry": "index.html",
+      "views": [
+        {
+          "name": "main",
+          "title": "Email Threat Detection",
+          "is_default": true
+        }
+      ]
+    }
   }
-]
+}
