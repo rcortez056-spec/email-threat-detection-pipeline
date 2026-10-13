@@ -3,20 +3,17 @@
   "version": "0.1.0",
   "required_executas": [
     {
-      "tool_id": "email-threat-detector"
+      "tool_id": "email-threat-detection-pipeline"
     }
   ],
   "ui": {
     "bundle": {
       "format": "static-spa",
       "entry": "index.html"
-    },
     "views": [
-      {
-        "name": "main",
-        "title": "Email Threat Detection"
-      }
-    ],
-    "host_api": {}
+  {
+    "name": "main",
+    "title": "Email Threat Detection",
+    "is_default": true
   }
-}
+]
