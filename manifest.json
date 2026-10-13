@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "version": "0.1.0",
+  "required_executas": [
+    {
+      "tool_id": "email-threat-detector"
+    }
+  ],
+  "ui": {
+    "bundle": {
+      "format": "static-spa",
+      "entry": "index.html"
+    },
+    "views": [
+      {
+        "name": "main",
+        "title": "Email Threat Detection"
+      }
+    ],
+    "host_api": {}
+  }
+}
