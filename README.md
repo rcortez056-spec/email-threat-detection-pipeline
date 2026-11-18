@@ -1,42 +1,36 @@
-# Email Threat Detection & Response Pipeline
+# Email Threat Detection Pipeline (Simulation)
 
-An enterprise-grade 5-node security orchestration architecture designed to inspect incoming emails, execute programmatic header checks, run confidence-thresholded intent analysis, and enforce deterministic routing guardrails.
+A browser-based simulation of a five-stage email threat-triage flow: header authentication check, confidence threshold, and escalation. It runs on scripted test scenarios to show how the stages fit together.
 
-Built by **Ramon Cortez** | AI Systems Architect
+Built by **Ramon Cortez**
 
----
-
-## Architecture Overview
-```
-+-----------------------------------------------------------------------------------+
-|                     EMAIL THREAT DETECTION & RESPONSE PIPELINE                   |
-+-----------------------------------------------------------------------------------+
-[ Node 1 ]       -> [ Node 2 ]       -> [ Node 3 ]       -> [ Node 4 ] -> [ Node 5 ]
-```
-
-## 5-Node Execution Logic
-
-### Node 1: Header Verification (Deterministic Layer)
-* **Action:** Inspects raw mail headers and programmatically verifies DKIM and SPF alignment.
-* **Guardrail:** If headers fail verification or indicate a spoofed domain (e.g., `amaz0n.com`), the pipeline triggers an immediate **Quarantine Action** before token consumption or LLM processing.
-
-### Node 2: Intent Engine (Confidence Scoring)
-* **Action:** Analyzes message intent and classifies risk profile using structured context evaluation.
-* **Guardrail:** Requires a strict **90%+ confidence threshold**. Low-confidence or ambiguous classifications route to secondary verification.
-
-### Node 3: Grounded Rules
-* **Action:** Enforces compliance checks and deterministic policy guardrails across verified email payloads.
-
-### Node 4: Auto-Archive
-* **Action:** Automatically processes and archives verified low-risk system notifications and noise, reducing operational load on security teams.
-
-### Node 5: Escalation & Action
-* **Action:** Routes verified high-severity threats directly to Security Operations (SecOps) with an automated audit log and contextual threat summary attached.
+**Status:** Prototype. This is a simulation, not a working detector. Real DKIM and SPF verification and an intent classifier are planned but not yet implemented.
 
 ---
 
-## Key Security Principles
-1. **Deterministic Front Door:** Never trust probabilistic outputs for standard security protocol checks (DKIM/SPF).
-2. **Fail-Safe Routing:** Unverified domains are quarantined instantly at zero token cost.
-3. **Auditability:** Complete logging across header checks, intent scores, and escalation triggers.Header Verification | Intent Engine     | Grounded Rules    | Auto-Archive | Escalation. Most email security workflows make the mistake of feeding raw incoming payloads directly into probabilistic models. This architecture places deterministic control wrappers upfront to eliminate spoofing risks before an LLM processes the message content.
- [Live Demo & Architecture Portal](https://ramon-email-threat.netlify.app)
+## Pipeline Stages (as simulated)
+
+1. **Header check:** Shows DKIM and SPF results for each scripted scenario. The results are fixed values in the demo, not verified from raw headers.
+2. **Confidence threshold:** Shows a confidence score per scenario and compares it to a 90% threshold. The scores are hardcoded, not produced by a model.
+3. **Routing:** Shows which path a scenario would take (archive, escalate, or manual review).
+4. **Escalation:** Displays the escalation step. No real review queue is connected.
+
+## Planned Work
+
+- Replace scripted header checks with real DKIM and SPF verification on raw email headers.
+- Build and test an intent classifier, with documented test cases and a confidence threshold.
+- Connect escalation to a real review queue and document the audit log format.
+
+## Design Principles
+
+- **Deterministic checks first:** Authentication checks should run before any probabilistic model.
+- **Inspectable:** Every stage and threshold is visible in the code.
+- **Complements existing tools:** Mature filters such as SpamAssassin and Rspamd already do DKIM/SPF checks and spam scoring. This project is a reference design for the triage flow, not a replacement for them.
+
+## License
+
+MIT
+
+---
+
+[Live Demo](https://ramon-email-threat.netlify.app)
